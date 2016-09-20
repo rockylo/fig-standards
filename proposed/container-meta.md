@@ -59,9 +59,8 @@ This is why this interface focuses only on how entries can be fetched from a con
 How entries are set in the container and how they are configured is out of the
 scope of this PSR. This is what makes a container implementation unique. Some
 containers have no configuration at all (they rely on autowiring), others rely
-on PHP code defined via callback, others on configuration files... this is very
-good and does not need to be standardized. We only focus on how entries are
-fetched.
+on PHP code defined via callback, others on configuration files... This standard
+only focuses on how entries are fetched.
 
 Also, naming conventions used for entries are not part of the scope of this
 PSR. Indeed, when you look at naming conventions, there are 2 strategies:
@@ -75,8 +74,108 @@ Both strategies have their strengths and weaknesses. The goal of this PSR
 is not to choose one convention over the other. Instead, the user can simply
 use aliasing to bridge the gap between 2 containers with different naming strategies.
 
+## 4. Recommended usage: Container PSR and the Service Locator
 
-## 4. History
+The PSR states that:
+
+> "users SHOULD NOT pass a container into an object, so the object
+> can retrieve *its own dependencies*. Users doing so are using the container as a Service Locator.
+> Service Locator usage is generally discouraged."
+
+```php
+// This is not OK, you are using the container as a service locator
+class BadExample
+{
+    public function __construct(ContainerInterface $container)
+    {
+        $this->db = $container->get('db');
+    }
+}
+
+// Instead, please consider injecting directly the dependencies
+class GoodExample
+{
+    public function __construct($db)
+    {
+        $this->db = $db;
+    }
+}
+// You can then use the container to inject the $db object into your $goodExample object.
+```
+
+In the `BadExample` you should not inject the container because:
+
+- it makes the code **less interoperable**: by injecting the container, you have
+  to use a container compatible with the Container PSR. With the other
+  option, your code can work with ANY container.
+- you are forcing the developer into naming its entry "db". This naming could
+  conflict with another package that has the same expectations for another service.
+- it is harder to test.
+- it is not directly clear from your code that the `BadExample` class will need
+  the "db" service. Dependencies are hidden.
+
+Very often, the `ContainerInterface` will be used by other packages. As a end-user
+PHP developer using a framework, it is unlikely you will ever need to use containers
+or type-hint on the `ContainerInterface` directly.
+
+Whether using the Container PSR into your code is considered a good practice or not boils down to
+knowing if the objects you are retrieving are **dependencies** of the object referencing
+the container or not. Here are a few more examples:
+
+```php
+class RouterExample
+{
+    // ...
+
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
+
+    public function getRoute($request)
+    {
+        $controllerName = $this->getContainerEntry($request->getUrl());
+        // This is OK, the router is finding the matching controller entry, the controller is
+        // not a dependency of the router
+        $controller = $this->container->get($controllerName);
+        // ...
+    }
+}
+```
+
+In this example, the router is transforming the URL into a controller entry name,
+then fetches the controller from the container. A controller is not really a
+dependency of the router. As a rule of thumb, if your object is *computing*
+the entry name among a list of entries that can vary, your use case is certainly legitimate.
+
+As an exception, factory objects whose only purpose is to create and return new instances may use
+the service locator pattern. The factory must then implement an interface so that it can itself
+be replaced by another factory using the same interface.
+
+```php
+// ok: a factory interface + implementation to create an object
+interface FactoryInterface
+{
+    public function newInstance();
+}
+
+class ExampleFactory implements FactoryInterface
+{
+    protected $container;
+    
+    public function __construct(ContainerInterface $container)
+    {
+        $this->container = $container;
+    }
+
+    public function newInstance()
+    {
+        return new Example($this->container->get('db'));
+    }
+}
+```
+
+## 5. History
 
 Before submitting the Container PSR to the PHP-FIG, the `ContainerInterface` was
 first proposed in a project named [container-interop](https://github.com/container-interop/container-interop/).
@@ -86,7 +185,7 @@ and to pave the way for the Container PSR.
 In the rest of this meta document, you will see frequent references to
 `container-interop.`
 
-## 5. Interface name
+## 6. Interface name
 
 The interface name is the same as the one discussed for `container-interop`
 (only the namespace is changed to match the other PSRs).
@@ -107,7 +206,7 @@ The list of options considered with their respective votes are:
 
 The complete discussion can be read in [container-interop's issue #1](https://github.com/container-interop/container-interop/issues/1).
 
-## 6. Interface methods
+## 7. Interface methods
 
 The choice of which methods the interface would contain was made after a statistical analysis of existing containers.
 The results of this analysis are available [in this document](https://gist.github.com/mnapoli/6159681).
@@ -134,7 +233,7 @@ As a result, the `ContainerInterface` contains two methods:
 - `get()`, returning anything, with one mandatory string parameter. Should throw an exception if the entry is not found.
 - `has()`, returning a boolean, with one mandatory string parameter.
 
-### 6.1. Number of parameters in `get()` method
+### 7.1. Number of parameters in `get()` method
 
 While `ContainerInterface` only defines one mandatory parameter in `get()`, it is not incompatible with
 existing containers that have additional optional parameters. PHP allows an implementation to offer more parameters
@@ -142,7 +241,7 @@ as long as they are optional, because the implementation *does* satisfy the inte
 
 This issue has been discussed in [container-interop's issue #6](https://github.com/container-interop/container-interop/issues/6).
 
-### 6.2. Type of the `$id` parameter
+### 7.2. Type of the `$id` parameter
 
 The type of the `$id` parameter in `get()` and `has()` has been discussed in
 [container-interop's issue #6](https://github.com/container-interop/container-interop/issues/6).
@@ -155,9 +254,64 @@ object that would describe how to create an instance.
 The conclusion of the discussion was that this was beyond the scope of getting entries from a container without
 knowing how the container provided them, and it was more fit for a factory.
 
-## 7. Delegate lookup feature
+### 7.3. Exceptions thrown
 
-### 7.1. Purpose of the delegate lookup feature
+This PSR provides 2 interfaces meant to be implemented by container exceptions.
+
+#### 7.3.1 Base exception
+
+The `Psr\Container\Exception\ContainerExceptionInterface` is the base interface. It SHOULD be implemented by custom exceptions thrown directly by the container.
+
+It is expected that any exception that is part of the domain of the container implements the `ContainerExceptionInterface`. A few examples:
+
+- if a container relies on a configuration file and if that configuration file is flawed, the container might throw an `InvalidFileException` implementing the `ContainerExceptionInterface`.
+- if a cyclic dependency is detected between dependencies, the container might throw an `CyclicDependencyException` implementing the `ContainerExceptionInterface`.
+
+However, if the exception is thrown by some code out of the container's scope (for instance an exception thrown while instantiating an entry), the container is not required to wrap this exception in a custom exception implementing the `ContainerExceptionInterface`.
+
+A [discussion about the usefulness of the base exception](https://groups.google.com/forum/#!topic/php-fig/_vdn5nLuPBI) was held on the PHP-FIG's discussion group
+
+#### 7.3.2 Not found exception
+
+A call to the `get` method with a non-existing id must throw an exception implementing the `Psr\Container\Exception\NotFoundExceptionInterface`.
+
+There is a strong relationship with the behaviour of the `has` method.
+
+For a given identifier:
+
+- if the `has` method returns `false`, then the `get` method MUST throw a `Psr\Container\Exception\NotFoundExceptionInterface`.
+- if the `has` method returns `true`, then the `get` method MUST NOT throw a `Psr\Container\Exception\NotFoundExceptionInterface`. However, this does not mean that the `get` method will succeed and throw no exception.
+
+When discussing the `ǸotFoundException`, a question arose to know whether the `NotFoundExceptionInterface` should have a `getMissingIdentifier()` method allowing the user catching the exception to know which identifier was not found.
+Indeed, a `ǸotFoundExceptionInterface` may have been triggered by a call to `get` in one of the dependencies, which is different from a call to `get` on a non existing identifier.
+
+After some discussion, it was decided that the `getIdentifier` method was not needed. Instead, it is important to stress out that the `get` method of the container SHOULD NOT throw a `NotFoundExceptionInterface` in case of a missing dependency. Instead, the container is expected to wrap the `NotFoundExceptionInterface` into another exception simply implementing the `ContainerExceptionInterface`.
+
+In pseudo-code, a correct implementation of `get` should look like this:
+
+~~~php
+public function get($identifier) {
+    if (identifier not found) {
+        throw NotFoundException::entryNotFound($identifier);
+    }
+    try {
+        // Do instantiation work
+        // Note: this instantiation work triggers additional calls to `get` for dependencies
+        // Returns the entry
+    } catch (NotFoundExceptionInterface $e) {
+        // Wrap the NotFoundExceptionInterface into another exception that does not implement the `NotFoundExceptionInterface`.
+        throw new MissingDependencyException('some text', 0, $e);
+    }
+}
+~~~
+
+With this rule in place, a user of a container can safely know that a `NotFoundExceptionInterface` means the identifier he provided to the `get` method is missing, and not that some dependency is missing.
+
+Behaviour of the `NotFoundException` was discussed in [container-interop's issue #37](https://github.com/container-interop/container-interop/issues/37).
+
+## 8. Delegate lookup feature
+
+### 8.1. Purpose of the delegate lookup feature
 
 The `ContainerInterface` is also enough if we want to have several containers side-by-side in the same
 application. For instance, this is what the [CompositeContainer](https://github.com/jeremeamia/acclimate-container/blob/master/src/CompositeContainer.php)
@@ -174,7 +328,7 @@ and the opposite should be true.
 
 In the sample above, entry 1 in container 1 is referencing entry 3 in container 2.
 
-### 7.2. Chosen Approach
+### 8.2. Chosen Approach
 
 Containers implementing this feature can perform dependency lookups in other containers.
 
@@ -198,7 +352,7 @@ Important! By default, the lookup should be performed on the delegate container 
 It is however allowed for containers to provide exception cases for special entries, and a way to lookup into
 the same container (or another container) instead of the delegate container.
 
-### 7.3. Typical usage
+### 8.3. Typical usage
 
 The *delegate container* will usually be a composite container. A composite container is a container that
 contains several other containers. When performing a lookup on a composite container, the inner containers are
@@ -232,7 +386,7 @@ However, using the *delegate lookup* feature, here is what happens when we ask t
 In the end, we get a controller instantiated by container 2 that references an *entityManager* instantiated
 by container 1.
 
-### 7.4. Alternative: the fallback strategy
+### 8.4. Alternative: the fallback strategy
 
 The first proposed approach we tried was to perform all the lookups in the "local" container,
 and if a lookup fails in the container, to use the delegate container. In this scenario, the
@@ -247,7 +401,7 @@ Problems with this strategy:
 - Heavy problem regarding infinite loops
 - Unable to overload a container entry with the delegate container entry
 
-### 7.5. Alternative: force implementing an interface
+### 8.5. Alternative: force implementing an interface
 
 A proposal was made on *container-interop* to develop a `ParentAwareContainerInterface` interface.
 It was proposed here: https://github.com/container-interop/container-interop/pull/8
@@ -255,7 +409,7 @@ It was proposed here: https://github.com/container-interop/container-interop/pul
 The interface would have had the behaviour of the delegate lookup feature but would have forced the addition of
 a `setParentContainter` method:
 
-```php
+~~~php
 interface ParentAwareContainerInterface extends ReadableContainerInterface {
     /**
      * Sets the parent container associated to that container. This container will call
@@ -265,7 +419,7 @@ interface ParentAwareContainerInterface extends ReadableContainerInterface {
      */
     public function setParentContainer(ContainerInterface $container);
 }
-```
+~~~
 
 The interface idea was first questioned by @Ocramius [here](https://github.com/container-interop/container-interop/pull/8#issuecomment-51721777).
 @Ocramius expressed the idea that an interface should not contain setters, otherwise, it is forcing implementation
@@ -280,7 +434,7 @@ If we had had an interface, we could have delegated the registration of the dele
 delegate/composite container itself.
 For instance:
 
-```php
+~~~php
 $containerA = new ContainerA();
 $containerB = new ContainerB();
 
@@ -301,7 +455,7 @@ class CompositeContainer {
   }
 }
 
-```
+~~~
 
 **Cons:**
 
@@ -310,7 +464,7 @@ Basically, forcing a setter into an interface is a bad idea. Setters are similar
 and it's a bad idea to standardize a constructor: how the delegate container is configured into a container is an
 implementation detail. This outweighs the benefits of the interface.
 
-### 7.6 Alternative: no exception case for delegate lookups
+### 8.6 Alternative: no exception case for delegate lookups
 
 Originally, the proposed wording for delegate lookup calls was:
 
@@ -326,7 +480,7 @@ This was later replaced by:
 Exception cases have been allowed to avoid breaking dependencies with some services that must be provided
 by the container (on @njasm proposal). This was proposed here: https://github.com/container-interop/container-interop/pull/20#issuecomment-56597235
 
-### 7.7. Alternative: having one of the containers act as the composite container
+### 8.7. Alternative: having one of the containers act as the composite container
 
 In real-life scenarios, we usually have a big framework (Symfony 2, Zend Framework 2, etc...) and we want to
 add another DI container to this container. Most of the time, the "big" framework will be responsible for
@@ -354,7 +508,7 @@ simply a temporary design pattern used to make existing frameworks that do not s
 play nice with other DI containers.
 
 
-8. Implementations
+9. Implementations
 ------------------
 
 The following projects already implement the `container-interop` version of the interface and
@@ -398,19 +552,19 @@ therefore would be willing to switch to a Container PSR as soon as it is availab
   micro-framework for writing APIs
 - [Invoker](https://github.com/mnapoli/Invoker): a generic and extensible callable invoker.
 
-9. People
+10. People
 ---------
-### 9.1 Editors
+### 10.1 Editors
 
 * [Matthieu Napoli](https://github.com/mnapoli)
 * [David Négrier](https://github.com/moufmouf)
 
-### 9.2 Sponsors
+### 10.2 Sponsors
 
 * [Paul M. Jones](https://github.com/pmjones) (Coordinator)
 * [Jeremy Lindblom](https://github.com/jeremeamia)
 
-### 9.3 Contributors
+### 10.3 Contributors
 
 Are listed here all people that contributed in the discussions or votes (on container-interop), by alphabetical order:
 
@@ -429,9 +583,10 @@ Are listed here all people that contributed in the discussions or votes (on cont
 - [Stephan Hochdörfer](https://github.com/shochdoerfer)
 - [Taylor Otwell](https://github.com/taylorotwell)
 
-10. Relevant links
+11. Relevant links
 ------------------
 
+- [Discussion about the container PSR and the service locator](https://groups.google.com/forum/#!topic/php-fig/pyTXRvLGpsw)
 - [Container-interop's `ContainerInterface.php`](https://github.com/container-interop/container-interop/blob/master/src/Interop/Container/ContainerInterface.php)
 - [List of all issues](https://github.com/container-interop/container-interop/issues?labels=ContainerInterface&milestone=&page=1&state=closed)
 - [Vote for the interface name](https://github.com/container-interop/container-interop/wiki/%231-interface-name:-Vote)

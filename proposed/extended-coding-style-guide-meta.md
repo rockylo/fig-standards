@@ -84,6 +84,12 @@ Numerous different options were suggested and they can be seen
 and the current implementation was chosen due to consistency with other parts of the PSR-12
 specification that came from PSR-2.
 
+## Enforcing short form for all type keywords
+
+PHP 7.0 introduced [scalar types declaration](http://php.net/manual/en/functions.arguments.php#functions.arguments.type-declaration)
+which does not support long type aliases. Therefore it makes sense to enforce primary short type forms to be used to
+have uniform syntax and prevent possible confusion.
+
 5. Changelog from PSR-2
 ------------------------
 
@@ -94,10 +100,11 @@ specification for a full understanding of its contents.
 ### New Statements
 
 * Lowercase for all keywords - Section 2.5
+* Short form for all type keywords - Section 2.5
 * Use statement grouping - Section 3
 * Use statement blocks - Section 3
 * Declare statement/Strict types declaration usage - Section 3
-* Brackets are always required for class instantiation - Section 4
+* Parentheses are always required for class instantiation - Section 4
 * Return type declarations - Section 4.5
 * Type hints - Section 4.5
 * Add finally block - Section 5.6
@@ -119,12 +126,15 @@ specification for a full understanding of its contents.
 
 ### 5.1 Editor(s)
 
-* Michael Cullum
+* Korvin Szanto (Former coordinator)
 
 ### 5.2 Sponsors
 
-* Korvin Szanto - concrete5 (Coordinator)
-* Alexander Makarov - Yii Framework
+* Alexander Makarov - Yii Framework (Coordinator)
+* Robert Deutz - Joomla
+
+### 5.3 Contributors
+* Michael Cullum (Former Editor)
 
 7. Votes
 --------

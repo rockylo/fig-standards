@@ -136,7 +136,7 @@ at any time.
 
 While caching is often an important part of application performance, it should never
 be a critical part of application functionality. Thus, an error in a cache system SHOULD NOT
-result in application failure.  For that reason Implementing Libraries MUST NOT
+result in application failure.  For that reason, Implementing Libraries MUST NOT
 throw exceptions other than those defined by the interface, and SHOULD trap any errors
 or exceptions triggered by an underlying data store and not allow them to bubble.
 
@@ -169,7 +169,9 @@ be requested from a Pool object via the getItem() method.  Calling Libraries
 SHOULD NOT assume that an Item created by one Implementing Library is
 compatible with a Pool from another Implementing Library.
 
-```php
+~~~php
+<?php
+
 namespace Psr\Cache;
 
 /**
@@ -231,7 +233,7 @@ interface CacheItemInterface
     /**
      * Sets the expiration time for this cache item.
      *
-     * @param \DateTimeInterface $expiration
+     * @param \DateTimeInterface|null $expiration
      *   The point in time after which the item MUST be considered expired.
      *   If null is passed explicitly, a default value MAY be used. If none is set,
      *   the value should be stored permanently or for as long as the
@@ -245,7 +247,7 @@ interface CacheItemInterface
     /**
      * Sets the expiration time for this cache item.
      *
-     * @param int|\DateInterval $time
+     * @param int|\DateInterval|null $time
      *   The period of time from the present after which the item MUST be considered
      *   expired. An integer parameter is understood to be the time in seconds until
      *   expiration. If null is passed explicitly, a default value MAY be used.
@@ -258,7 +260,7 @@ interface CacheItemInterface
     public function expiresAfter($time);
 
 }
-```
+~~~
 
 ### CacheItemPoolInterface
 
@@ -268,7 +270,9 @@ It is also the primary point of interaction with the entire cache collection.
 All configuration and initialization of the Pool is left up to an Implementing
 Library.
 
-```php
+~~~php
+<?php
+
 namespace Psr\Cache;
 
 /**
@@ -297,8 +301,8 @@ interface CacheItemPoolInterface
     /**
      * Returns a traversable set of cache items.
      *
-     * @param array $keys
-     * An indexed array of keys of items to retrieve.
+     * @param string[] $keys
+     *   An indexed array of keys of items to retrieve.
      *
      * @throws InvalidArgumentException
      *   If any of the keys in $keys are not a legal value a \Psr\Cache\InvalidArgumentException
@@ -320,14 +324,14 @@ interface CacheItemPoolInterface
      * such situation use CacheItemInterface::isHit() instead.
      *
      * @param string $key
-     *    The key for which to check existence.
+     *   The key for which to check existence.
      *
      * @throws InvalidArgumentException
      *   If the $key string is not a legal value a \Psr\Cache\InvalidArgumentException
      *   MUST be thrown.
      *
      * @return bool
-     *  True if item exists in the cache, false otherwise.
+     *   True if item exists in the cache, false otherwise.
      */
     public function hasItem($key);
 
@@ -343,7 +347,7 @@ interface CacheItemPoolInterface
      * Removes the item from the pool.
      *
      * @param string $key
-     *   The key for which to delete
+     *   The key to delete.
      *
      * @throws InvalidArgumentException
      *   If the $key string is not a legal value a \Psr\Cache\InvalidArgumentException
@@ -357,7 +361,7 @@ interface CacheItemPoolInterface
     /**
      * Removes multiple items from the pool.
      *
-     * @param array $keys
+     * @param string[] $keys
      *   An array of keys that should be removed from the pool.
 
      * @throws InvalidArgumentException
@@ -399,7 +403,7 @@ interface CacheItemPoolInterface
      */
     public function commit();
 }
-```
+~~~
 
 ### CacheException
 
@@ -409,7 +413,9 @@ or invalid credentials supplied.
 
 Any exception thrown by an Implementing Library MUST implement this interface.
 
-```php
+~~~php
+<?php
+
 namespace Psr\Cache;
 
 /**
@@ -418,11 +424,13 @@ namespace Psr\Cache;
 interface CacheException
 {
 }
-```
+~~~
 
 ### InvalidArgumentException
 
-```php
+~~~php
+<?php
+
 namespace Psr\Cache;
 
 /**
@@ -434,4 +442,4 @@ namespace Psr\Cache;
 interface InvalidArgumentException extends CacheException
 {
 }
-```
+~~~

@@ -17,12 +17,12 @@ making a request to an HTTP API, or handling an incoming request.
 
 Every HTTP request message has a specific form:
 
-```http
+~~~http
 POST /path HTTP/1.1
 Host: example.com
 
 foo=bar&baz=bat
-```
+~~~
 
 The first line of a request is the "request line", and contains, in order, the
 HTTP request method, the request target (usually either an absolute URI or a
@@ -31,12 +31,12 @@ or more HTTP headers, an empty line, and the message body.
 
 HTTP response messages have a similar structure:
 
-```http
+~~~http
 HTTP/1.1 200 OK
 Content-Type: text/plain
 
 This is the response body
-```
+~~~
 
 The first line is the "status line", and contains, in order, the HTTP protocol
 version, the HTTP status code, and a "reason phrase," a human-readable
@@ -74,9 +74,9 @@ implemented directly, implementors SHOULD implement
 From here forward, the namespace `Psr\Http\Message` will be omitted when
 referring to these interfaces.
 
-#### 1.2 HTTP Headers
+### 1.2 HTTP Headers
 
-##### Case-insensitive header field names
+#### Case-insensitive header field names
 
 HTTP messages include case-insensitive header field names. Headers are retrieved
 by name from classes implementing the `MessageInterface` in a case-insensitive
@@ -84,7 +84,7 @@ manner. For example, retrieving the `foo` header will return the same result as
 retrieving the `FoO` header. Similarly, setting the `Foo` header will overwrite
 any previously set `foo` header value.
 
-```php
+~~~php
 $message = $message->withHeader('foo', 'bar');
 
 echo $message->getHeaderLine('foo');
@@ -96,7 +96,7 @@ echo $message->getHeaderLine('FOO');
 $message = $message->withHeader('fOO', 'baz');
 echo $message->getHeaderLine('foo');
 // Outputs: baz
-```
+~~~
 
 Despite that headers may be retrieved case-insensitively, the original case
 MUST be preserved by the implementation, in particular when retrieved with
@@ -106,7 +106,7 @@ Non-conforming HTTP applications may depend on a certain case, so it is useful
 for a user to be able to dictate the case of the HTTP headers when creating a
 request or response.
 
-##### Headers with multiple values
+#### Headers with multiple values
 
 In order to accommodate headers with multiple values yet still provide the
 convenience of working with headers as strings, headers can be retrieved from
@@ -116,7 +116,7 @@ header values of a case-insensitive header by name concatenated with a comma.
 Use `getHeader()` to retrieve an array of all the header values for a
 particular case-insensitive header by name.
 
-```php
+~~~php
 $message = $message
     ->withHeader('foo', 'bar')
     ->withAddedHeader('foo', 'baz');
@@ -126,14 +126,14 @@ $header = $message->getHeaderLine('foo');
 
 $header = $message->getHeader('foo');
 // ['bar', 'baz']
-```
+~~~
 
 Note: Not all header values can be concatenated using a comma (e.g.,
 `Set-Cookie`). When working with such headers, consumers of
 `MessageInterface`-based classes SHOULD rely on the `getHeader()` method
 for retrieving such multi-valued headers.
 
-##### Host header
+#### Host header
 
 In requests, the `Host` header typically mirrors the host component of the URI, as
 well as the host used when establishing the TCP connection. However, the HTTP
@@ -252,18 +252,18 @@ Calling this method does not affect the URI, as it is returned from `getUri()`.
 
 For example, a user may want to make an asterisk-form request to a server:
 
-```php
+~~~php
 $request = $request
     ->withMethod('OPTIONS')
     ->withRequestTarget('*')
     ->withUri(new Uri('https://example.org/'));
-```
+~~~
 
 This example may ultimately result in an HTTP request that looks like this:
 
-```http
+~~~http
 OPTIONS * HTTP/1.1
-```
+~~~
 
 But the HTTP client will be able to use the effective URL (from `getUri()`),
 to determine the protocol, hostname and TCP port.
@@ -296,9 +296,9 @@ account Common Gateway Interface (CGI), and, more specifically, PHP's
 abstraction and extension of CGI via its Server APIs (SAPI). PHP has provided
 simplification around input marshaling via superglobals such as:
 
-- `$_COOKIE`, which deserializes and provides simplified access for HTTP
+- `$_COOKIE`, which deserializes and provides simplified access to HTTP
   cookies.
-- `$_GET`, which deserializes and provides simplified access for query string
+- `$_GET`, which deserializes and provides simplified access to query string
   arguments.
 - `$_POST`, which deserializes and provides simplified access for urlencoded
   parameters submitted via HTTP POST; generically, it can be considered the
@@ -330,7 +330,7 @@ of file inputs. As an example, if you have a form that submits an array of files
 — e.g., the input name "files", submitting `files[0]` and `files[1]` — PHP will
 represent this as:
 
-```php
+~~~php
 array(
     'files' => array(
         'name' => array(
@@ -344,11 +344,11 @@ array(
         /* etc. */
     ),
 )
-```
+~~~
 
 instead of the expected:
 
-```php
+~~~php
 array(
     'files' => array(
         0 => array(
@@ -363,7 +363,7 @@ array(
         ),
     ),
 )
-```
+~~~
 
 The result is that consumers need to know this language implementation detail,
 and write code for gathering the data for a given upload.
@@ -398,13 +398,13 @@ were submitted.
 
 In the simplest example, this might be a single named form element submitted as:
 
-```html
+~~~html
 <input type="file" name="avatar" />
-```
+~~~
 
 In this case, the structure in `$_FILES` would look like:
 
-```php
+~~~php
 array(
     'avatar' => array(
         'tmp_name' => 'phpUxcOty',
@@ -414,25 +414,25 @@ array(
         'error' => 0,
     ),
 )
-```
+~~~
 
 The normalized form returned by `getUploadedFiles()` would be:
 
-```php
+~~~php
 array(
     'avatar' => /* UploadedFileInterface instance */
 )
-```
+~~~
 
 In the case of an input using array notation for the name:
 
-```html
+~~~html
 <input type="file" name="my-form[details][avatar]" />
-```
+~~~
 
 `$_FILES` ends up looking like this:
 
-```php
+~~~php
 array(
     'my-form' => array(
         'details' => array(
@@ -446,11 +446,11 @@ array(
         ),
     ),
 )
-```
+~~~
 
 And the corresponding tree returned by `getUploadedFiles()` should be:
 
-```php
+~~~php
 array(
     'my-form' => array(
         'details' => array(
@@ -458,14 +458,14 @@ array(
         ),
     ),
 )
-```
+~~~
 
 In some cases, you may specify an array of files:
 
-```html
+~~~html
 Upload an avatar: <input type="file" name="my-form[details][avatars][]" />
 Upload an avatar: <input type="file" name="my-form[details][avatars][]" />
-```
+~~~
 
 (As an example, JavaScript controls might spawn additional file upload inputs to
 allow uploading multiple files at once.)
@@ -474,7 +474,7 @@ In such a case, the specification implementation must aggregate all information
 related to the file at the given index. The reason is because `$_FILES` deviates
 from its normal structure in such cases:
 
-```php
+~~~php
 array(
     'my-form' => array(
         'details' => array(
@@ -508,12 +508,12 @@ array(
         ),
     ),
 )
-```
+~~~
 
 The above `$_FILES` array would correspond to the following structure as
 returned by `getUploadedFiles()`:
 
-```php
+~~~php
 array(
     'my-form' => array(
         'details' => array(
@@ -525,13 +525,13 @@ array(
         ),
     ),
 )
-```
+~~~
 
 Consumers would access index `1` of the nested array using:
 
-```php
+~~~php
 $request->getUploadedFiles()['my-form']['details']['avatars'][1];
-```
+~~~
 
 Because the uploaded files data is derivative (derived from `$_FILES` or the
 request body), a mutator method, `withUploadedFiles()`, is also present in the
@@ -539,7 +539,7 @@ interface, allowing delegation of the normalization to another process.
 
 In the case of the original examples, consumption resembles the following:
 
-```php
+~~~php
 $file0 = $request->getUploadedFiles()['files'][0];
 $file1 = $request->getUploadedFiles()['files'][1];
 
@@ -550,7 +550,7 @@ printf(
 );
 
 // "Received the files file0.txt and file1.html"
-```
+~~~
 
 This proposal also recognizes that implementations may operate in non-SAPI
 environments. As such, `UploadedFileInterface` provides methods for ensuring
@@ -567,7 +567,7 @@ operations will work regardless of environment. In particular:
 
 As examples:
 
-```
+~~~
 // Move a file to an upload directory
 $filename = sprintf(
     '%s.%s',
@@ -582,7 +582,7 @@ $file0->moveTo(DATA_DIR . '/' . $filename);
 // StreamWrapper.
 $stream = new Psr7StreamWrapper($file1->getStream());
 stream_copy_to_stream($stream, $s3wrapper);
-```
+~~~
 
 ## 2. Package
 
@@ -593,7 +593,7 @@ The interfaces and classes described are provided as part of the
 
 ### 3.1 `Psr\Http\Message\MessageInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -631,7 +631,7 @@ interface MessageInterface
      * new protocol version.
      *
      * @param string $version HTTP protocol version
-     * @return self
+     * @return static
      */
     public function withProtocolVersion($version);
 
@@ -643,7 +643,7 @@ interface MessageInterface
      *
      *     // Represent the headers as a string
      *     foreach ($message->getHeaders() as $name => $values) {
-     *         echo $name . ": " . implode(", ", $values);
+     *         echo $name . ': ' . implode(', ', $values);
      *     }
      *
      *     // Emit headers iteratively:
@@ -721,7 +721,7 @@ interface MessageInterface
      *
      * @param string $name Case-insensitive header field name.
      * @param string|string[] $value Header value(s).
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException for invalid header names or values.
      */
     public function withHeader($name, $value);
@@ -739,7 +739,7 @@ interface MessageInterface
      *
      * @param string $name Case-insensitive header field name to add.
      * @param string|string[] $value Header value(s).
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException for invalid header names.
      * @throws \InvalidArgumentException for invalid header values.
      */
@@ -755,7 +755,7 @@ interface MessageInterface
      * the named header.
      *
      * @param string $name Case-insensitive header field name to remove.
-     * @return self
+     * @return static
      */
     public function withoutHeader($name);
 
@@ -776,16 +776,16 @@ interface MessageInterface
      * new body stream.
      *
      * @param StreamInterface $body Body.
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException When the body is not valid.
      */
     public function withBody(StreamInterface $body);
 }
-```
+~~~
 
 ### 3.2 `Psr\Http\Message\RequestInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -840,10 +840,10 @@ interface RequestInterface extends MessageInterface
      * immutability of the message, and MUST return an instance that has the
      * changed request target.
      *
-     * @see http://tools.ietf.org/html/rfc7230#section-2.7 (for the various
+     * @see http://tools.ietf.org/html/rfc7230#section-5.3 (for the various
      *     request-target forms allowed in request messages)
      * @param mixed $requestTarget
-     * @return self
+     * @return static
      */
     public function withRequestTarget($requestTarget);
 
@@ -866,7 +866,7 @@ interface RequestInterface extends MessageInterface
      * changed request method.
      *
      * @param string $method Case-sensitive method.
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException for invalid HTTP methods.
      */
     public function withMethod($method);
@@ -894,7 +894,7 @@ interface RequestInterface extends MessageInterface
      * setting `$preserveHost` to `true`. When `$preserveHost` is set to
      * `true`, this method interacts with the Host header in the following ways:
      *
-     * - If the the Host header is missing or empty, and the new URI contains
+     * - If the Host header is missing or empty, and the new URI contains
      *   a host component, this method MUST update the Host header in the returned
      *   request.
      * - If the Host header is missing or empty, and the new URI does not contain a
@@ -910,15 +910,15 @@ interface RequestInterface extends MessageInterface
      * @see http://tools.ietf.org/html/rfc3986#section-4.3
      * @param UriInterface $uri New request URI to use.
      * @param bool $preserveHost Preserve the original state of the Host header.
-     * @return self
+     * @return static
      */
     public function withUri(UriInterface $uri, $preserveHost = false);
 }
-```
+~~~
 
 #### 3.2.1 `Psr\Http\Message\ServerRequestInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -934,7 +934,7 @@ namespace Psr\Http\Message;
  * - Headers
  * - Message body
  *
- * Additionally, it encapsulates all data as it has arrived to the
+ * Additionally, it encapsulates all data as it has arrived at the
  * application from the CGI and/or PHP environment, including:
  *
  * - The values represented in $_SERVER.
@@ -1000,7 +1000,7 @@ interface ServerRequestInterface extends RequestInterface
      * updated cookie values.
      *
      * @param array $cookies Array of key/value pairs representing cookies.
-     * @return self
+     * @return static
      */
     public function withCookieParams(array $cookies);
 
@@ -1038,7 +1038,7 @@ interface ServerRequestInterface extends RequestInterface
      *
      * @param array $query Array of query string arguments, typically from
      *     $_GET.
-     * @return self
+     * @return static
      */
     public function withQueryParams(array $query);
 
@@ -1063,8 +1063,8 @@ interface ServerRequestInterface extends RequestInterface
      * immutability of the message, and MUST return an instance that has the
      * updated body parameters.
      *
-     * @param array An array tree of UploadedFileInterface instances.
-     * @return self
+     * @param array $uploadedFiles An array tree of UploadedFileInterface instances.
+     * @return static
      * @throws \InvalidArgumentException if an invalid structure is provided.
      */
     public function withUploadedFiles(array $uploadedFiles);
@@ -1110,7 +1110,7 @@ interface ServerRequestInterface extends RequestInterface
      *
      * @param null|array|object $data The deserialized body data. This will
      *     typically be in an array or object.
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException if an unsupported argument type is
      *     provided.
      */
@@ -1159,7 +1159,7 @@ interface ServerRequestInterface extends RequestInterface
      * @see getAttributes()
      * @param string $name The attribute name.
      * @param mixed $value The value of the attribute.
-     * @return self
+     * @return static
      */
     public function withAttribute($name, $value);
 
@@ -1175,15 +1175,15 @@ interface ServerRequestInterface extends RequestInterface
      *
      * @see getAttributes()
      * @param string $name The attribute name.
-     * @return self
+     * @return static
      */
     public function withoutAttribute($name);
 }
-```
+~~~
 
 ### 3.3 `Psr\Http\Message\ResponseInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -1231,7 +1231,7 @@ interface ResponseInterface extends MessageInterface
      * @param string $reasonPhrase The reason phrase to use with the
      *     provided status code; if none is provided, implementations MAY
      *     use the defaults as suggested in the HTTP specification.
-     * @return self
+     * @return static
      * @throws \InvalidArgumentException For invalid status code arguments.
      */
     public function withStatus($code, $reasonPhrase = '');
@@ -1251,11 +1251,11 @@ interface ResponseInterface extends MessageInterface
      */
     public function getReasonPhrase();
 }
-```
+~~~
 
 ### 3.4 `Psr\Http\Message\StreamInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -1413,11 +1413,11 @@ interface StreamInterface
      */
     public function getMetadata($key = null);
 }
-```
+~~~
 
 ### 3.5 `Psr\Http\Message\UriInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -1435,7 +1435,7 @@ namespace Psr\Http\Message;
  * state of the current instance and return an instance that contains the
  * changed state.
  *
- * Typically the Host header will be also be present in the request message.
+ * Typically the Host header will also be present in the request message.
  * For server-side requests, the scheme will typically be discoverable in the
  * server parameters.
  *
@@ -1605,7 +1605,7 @@ interface UriInterface
      * An empty scheme is equivalent to removing the scheme.
      *
      * @param string $scheme The scheme to use with the new instance.
-     * @return self A new instance with the specified scheme.
+     * @return static A new instance with the specified scheme.
      * @throws \InvalidArgumentException for invalid schemes.
      * @throws \InvalidArgumentException for unsupported schemes.
      */
@@ -1623,7 +1623,7 @@ interface UriInterface
      *
      * @param string $user The user name to use for authority.
      * @param null|string $password The password associated with $user.
-     * @return self A new instance with the specified user information.
+     * @return static A new instance with the specified user information.
      */
     public function withUserInfo($user, $password = null);
 
@@ -1636,7 +1636,7 @@ interface UriInterface
      * An empty host value is equivalent to removing the host.
      *
      * @param string $host The hostname to use with the new instance.
-     * @return self A new instance with the specified host.
+     * @return static A new instance with the specified host.
      * @throws \InvalidArgumentException for invalid hostnames.
      */
     public function withHost($host);
@@ -1655,7 +1655,7 @@ interface UriInterface
      *
      * @param null|int $port The port to use with the new instance; a null value
      *     removes the port information.
-     * @return self A new instance with the specified port.
+     * @return static A new instance with the specified port.
      * @throws \InvalidArgumentException for invalid ports.
      */
     public function withPort($port);
@@ -1679,7 +1679,7 @@ interface UriInterface
      * Implementations ensure the correct encoding as outlined in getPath().
      *
      * @param string $path The path to use with the new instance.
-     * @return self A new instance with the specified path.
+     * @return static A new instance with the specified path.
      * @throws \InvalidArgumentException for invalid paths.
      */
     public function withPath($path);
@@ -1696,7 +1696,7 @@ interface UriInterface
      * An empty query string value is equivalent to removing the query string.
      *
      * @param string $query The query string to use with the new instance.
-     * @return self A new instance with the specified query string.
+     * @return static A new instance with the specified query string.
      * @throws \InvalidArgumentException for invalid query strings.
      */
     public function withQuery($query);
@@ -1713,7 +1713,7 @@ interface UriInterface
      * An empty fragment value is equivalent to removing the fragment.
      *
      * @param string $fragment The fragment to use with the new instance.
-     * @return self A new instance with the specified fragment.
+     * @return static A new instance with the specified fragment.
      */
     public function withFragment($fragment);
 
@@ -1742,11 +1742,11 @@ interface UriInterface
      */
     public function __toString();
 }
-```
+~~~
 
 ### 3.6 `Psr\Http\Message\UploadedFileInterface`
 
-```php
+~~~php
 <?php
 namespace Psr\Http\Message;
 
@@ -1806,7 +1806,7 @@ interface UploadedFileInterface
      * @see http://php.net/is_uploaded_file
      * @see http://php.net/move_uploaded_file
      * @param string $targetPath Path to which to move the uploaded file.
-     * @throws \InvalidArgumentException if the $path specified is invalid.
+     * @throws \InvalidArgumentException if the $targetPath specified is invalid.
      * @throws \RuntimeException on any error during the move operation.
      * @throws \RuntimeException on the second or subsequent call to the method.
      */
@@ -1869,4 +1869,4 @@ interface UploadedFileInterface
      */
     public function getClientMediaType();
 }
-```
+~~~
